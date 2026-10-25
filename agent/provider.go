@@ -416,7 +416,16 @@ func quotaAwareHTTPClient(proxy, sessionHeaderKey string) (*http.Client, error) 
 		}
 		transport.Proxy = http.ProxyURL(proxyURL)
 	}
-	return &http.Client{Transport: quotaAwareTransport{base: transport, sessionHeaderKey: strings.TrimSpace(sessionHeaderKey)}}, nil
+	// Fold tool results into user turns for gateways that drop `role:"tool"`
+	// messages. Sits OUTSIDE quotaAwareTransport so the recorder's Capture still
+	// sees the folded body — the recorded raw_request is then exactly what went
+	// over the wire, which is what makes a "tools returned empty" report
+	// diagnosable after the fact.
+	inner := http.RoundTripper(quotaAwareTransport{base: transport, sessionHeaderKey: strings.TrimSpace(sessionHeaderKey)})
+	return &http.Client{Transport: openAIToolRoleNormalizer{
+		base:    inner,
+		enabled: toolRoleFoldEnabled,
+	}}, nil
 }
 
 // logTestConnection prints the raw HTTP status code(s) and response body of a

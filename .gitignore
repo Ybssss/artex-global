@@ -83,3 +83,7 @@ secrets.env
 # artex.exe 를 포그라운드로 띄울 때 리다이렉트한 런타임 로그
 /artex.out.log
 /artex.err.log
+# 관리자 비밀번호 / 로그인 토큰 스크래치 파일 — 절대 커밋하지 않는다.
+.adminpass
+.token.tmp
+.token

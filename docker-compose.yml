@@ -29,6 +29,12 @@ services:
       ARTEX_LLM_MODEL: ${ARTEX_LLM_MODEL:-}
       ARTEX_LLM_BASE_URL: ${ARTEX_LLM_BASE_URL:-}
       ARTEX_LLM_PROXY: ${ARTEX_LLM_PROXY:-}
+      # 把 role:"tool" 结果折叠进 user 轮次再发出去。某些 OpenAI 兼容网关会在组装上游
+      # prompt 时静默丢弃 role:"tool" 消息：请求照样 200，工具输出永远到不了模型，模型
+      # 于是回报"工具返回空"，调用方无法与真实故障区分。开启后工具输出以普通文本送达，
+      # 代价是线路上失去 tool_call_id 关联（assistant 的 tool_calls 仍保留在会话记录里）。
+      # 网关行为正常时不要开。1/true/on/yes 开启，其它值关闭。
+      ARTEX_LLM_FOLD_TOOL_ROLE: ${ARTEX_LLM_FOLD_TOOL_ROLE:-}
       # 첫 실행 보호. 비워 두면 기동 로그에 무작위 설정 토큰이 찍히고, /setup 에서 그 값을
       # 입력해야 관리자 비밀번호를 만들 수 있습니다(docker compose logs artex 로 확인).
       # ARTEX_ADMIN_PASSWORD 를 주면 /setup 없이 그 값으로 바로 초기화합니다(8자 이상).
