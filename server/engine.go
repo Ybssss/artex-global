@@ -886,7 +886,7 @@ func (e *Engine) plannerLoop(ctx context.Context, t *Task) {
 					log.Printf("[goalless] task %s 收尾落 done 失败: %v", t.ID, err)
 				} else if won {
 					e.emitActivity(t, db.Activity{Worker: "system", Kind: "text",
-						Summary: goallessTaskDoneSummary})
+						Summary: actText(goallessTaskDoneSummary)})
 				}
 			}
 			return // goalless 分支永不进入 planner.Plan
@@ -906,7 +906,7 @@ func (e *Engine) plannerLoop(ctx context.Context, t *Task) {
 		// round marker: each Plan() is one planner round; emit a boundary so the
 		// UI can separate rounds in the transcript (kind='round').
 		e.emitActivity(t, db.Activity{Worker: "planner", Kind: "round",
-			Summary: fmt.Sprintf(plannerRoundSummaryFmt, e.nextPlannerRound(t.ID))})
+			Summary: fmt.Sprintf(actText(plannerRoundSummaryFmt), e.nextPlannerRound(t.ID))})
 		// what fired this round (worker done / finding; may be several — debounce
 		// coalesces a burst; empty for time/heartbeat wakes).
 		triggers := t.drainTriggers()

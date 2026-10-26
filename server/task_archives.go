@@ -346,7 +346,7 @@ func (s *Server) restoreTaskArchivePayload(job *pgdb.TaskArchive, snapshot *pgdb
 	}
 	if len(warnings) > 0 {
 		if _, err := s.m.pg.Exploration(snapshot.ExplorationID).AppendActivity(pgdb.Activity{
-			Worker: "system", Kind: "system", Summary: "작업 복원을 완료했지만 일부 연관 항목이 온전히 복원되지 못했습니다", Detail: strings.Join(warnings, "\n"),
+			Worker: "system", Kind: "system", Summary: actText("작업 복원을 완료했지만 일부 연관 항목이 온전히 복원되지 못했습니다"), Detail: strings.Join(warnings, "\n"),
 		}); err != nil {
 			log.Printf("[task-archive] persist restore warnings for task %d: %v", job.TaskID, err)
 		}

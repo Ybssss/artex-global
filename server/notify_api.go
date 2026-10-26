@@ -475,7 +475,7 @@ func notifyTestMessage(baseURL string) notify.Message {
 			Name:      notifyTestName,
 			VulnClass: notifyTestClass,
 			Severity:  "low",
-			Summary:   notifyTestSummary,
+			Summary:   actText(notifyTestSummary),
 			Assets:    []string{"artex.example.com"},
 			DetailURL: baseURL,
 		}},

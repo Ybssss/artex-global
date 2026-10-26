@@ -81,7 +81,13 @@ func Kinds() []string {
 // 既不会成功，又会把真正的错误刷没在重试日志里。
 type PermanentError struct{ Err error }
 
-func (e *PermanentError) Error() string { return e.Err.Error() }
+// Error 返回给用户看的失败原因，按当前界面语言渲染。
+//
+// 这条字符串会经 err.Error() 写进 notification_deliveries.error，并原样显示在
+// 「通知」页的投递记录里，所以必须在出口翻译。放在这里而不是每个 errors.New
+// 调用点，是因为渠道实现有几十处构造错误，逐点包裹容易漏；而它们最终都以
+// PermanentError 或裸 error 交给投递引擎，出口只有这一个。
+func (e *PermanentError) Error() string { return errText(e.Err.Error()) }
 func (e *PermanentError) Unwrap() error { return e.Err }
 
 // Permanent 把 err 标记为永久失败。err 为 nil 时返回 nil，

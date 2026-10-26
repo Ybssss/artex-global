@@ -1531,7 +1531,7 @@ func (s *Server) testLLM(w http.ResponseWriter, r *http.Request) {
 	// 是跑起来之后的事。
 	lat, reply, err := agent.TestConnection(r.Context(), cfg)
 	if err != nil {
-		writeJSON(w, 200, map[string]any{"ok": false, "error": err.Error()})
+		writeJSON(w, 200, map[string]any{"ok": false, "error": trMsg(err.Error())})
 		return
 	}
 	// 回传模型实际回复，让"测试通过"有据可查：看得见它确实说了话，而不只是 HTTP 200。
@@ -1801,7 +1801,7 @@ func (s *Server) seed(t *Task, text string) {
 			rootID, _ = as.UpsertRootDomain(db.UpsertRootDomainReq{Domain: host, TaskID: taskID})
 		}
 		if rootID > 0 {
-			_ = as.SetTaskAssetSource(taskID, rootID, "task", taskAssetSourceTaskSummary, nil)
+			_ = as.SetTaskAssetSource(taskID, rootID, "task", actText(taskAssetSourceTaskSummary), nil)
 		}
 	}
 	// anchor the seeded assets to this task's begin root as lineage/provenance
@@ -3735,7 +3735,7 @@ func (s *Server) testWebSearch(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	results, err := actool.WebSearchProbe(ctx, cfg, probeQuery, 3)
 	if err != nil {
-		writeJSON(w, 200, map[string]any{"ok": false, "error": err.Error(), "backend": backend})
+		writeJSON(w, 200, map[string]any{"ok": false, "error": trMsg(err.Error()), "backend": backend})
 		return
 	}
 	if len(results) == 0 {

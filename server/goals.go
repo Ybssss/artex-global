@@ -65,7 +65,7 @@ func (s *Server) startTaskEngine(t *Task) {
 		return
 	}
 	s.engine.emitActivity(t, db.Activity{Worker: "planner", Kind: "round",
-		Summary: goalBreakdownRound0Summary})
+		Summary: actText(goalBreakdownRound0Summary)})
 	goals := s.createGoals(ctx, t, func(r db.Activity) {
 		s.engine.emitActivity(t, r)
 	})
@@ -219,12 +219,12 @@ func (s *Server) admitTaskWhen(t *Task, mode string, requirePaused bool) (queued
 	}
 	if shouldQueue {
 		if !wasQueued {
-			summary := fmt.Sprintf(queuedConcurrencyLimitSummaryFmt, limit)
+			summary := fmt.Sprintf(actText(queuedConcurrencyLimitSummaryFmt), limit)
 			switch {
 			case !ready:
-				summary = queuedNoLLMSummary
+				summary = actText(queuedNoLLMSummary)
 			case readyBacklog:
-				summary = queuedFIFOSummary
+				summary = actText(queuedFIFOSummary)
 			}
 			s.engine.emitActivity(t, db.Activity{Worker: "system", Kind: "text", Summary: summary})
 		}
@@ -294,7 +294,7 @@ func (s *Server) reconcileConcurrency() {
 				continue
 			}
 			s.engine.emitActivity(task, db.Activity{Worker: "system", Kind: "text",
-				Summary: queuedNoLLMSummary})
+				Summary: actText(queuedNoLLMSummary)})
 		}
 	}
 

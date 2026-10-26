@@ -554,11 +554,11 @@ func (s *Server) insertAssets(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if err != nil {
-			errs = append(errs, errEntry{Index: i, Error: err.Error()})
+			errs = append(errs, errEntry{Index: i, Error: trMsg(err.Error())})
 			continue
 		}
 		if req.TaskID > 0 {
-			_ = as.SetTaskAssetSource(req.TaskID, id, "api", taskAssetSourceAPISummary, nil)
+			_ = as.SetTaskAssetSource(req.TaskID, id, "api", actText(taskAssetSourceAPISummary), nil)
 		}
 		results = append(results, result{Index: i, ID: id, Type: a.Type})
 	}

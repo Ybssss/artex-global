@@ -762,7 +762,7 @@ func (s *Server) pgPreviewPrompt(w http.ResponseWriter, r *http.Request) {
 	}
 	rendered, err := renderPrompt(body.Template, withGlobalVars(vars), body.Sample)
 	if err != nil {
-		writeJSON(w, 200, map[string]any{"rendered": "", "error": err.Error()})
+		writeJSON(w, 200, map[string]any{"rendered": "", "error": trMsg(err.Error())})
 		return
 	}
 	writeJSON(w, 200, map[string]any{"rendered": rendered})
