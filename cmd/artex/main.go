@@ -35,11 +35,13 @@ const banner = `
 `
 
 // printBanner writes the startup banner + version/runtime info to stdout.
+// The two text lines go through config.T so the first thing an operator sees
+// matches the language they configured (ARTEX_LANG / config file).
 func printBanner(addr string) {
 	fmt.Print(banner)
-	fmt.Println("  AI 자율 침투 테스트 시스템")
-	fmt.Printf("  버전 %s  ·  %s/%s  ·  %s  ·  수신 대기 %s\n\n",
-		version, runtime.GOOS, runtime.GOARCH, runtime.Version(), addr)
+	fmt.Println(config.T("  AI 자율 침투 테스트 시스템"))
+	fmt.Print(fmt.Sprintf(config.T("  버전 %s  ·  %s/%s  ·  %s  ·  수신 대기 %s\n\n"),
+		version, runtime.GOOS, runtime.GOARCH, runtime.Version(), addr))
 }
 
 // main only maps run's result onto the process exit code. The exit code is part

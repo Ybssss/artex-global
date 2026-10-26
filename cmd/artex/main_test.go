@@ -23,31 +23,40 @@ func TestShutdownContextPreservesNamedCause(t *testing.T) {
 	}
 }
 
-// TestPrintBannerLocalized verifies that the startup banner printed to stdout is
-// Korean and carries no leftover CJK Han characters. This is the first thing a
-// user sees when running ARTEX, so it must not stay in Chinese (backlog F11).
-// The "[config] ..." log lines in run() are intentionally out of scope — they
-// are logs, which the localization brief ranks lowest (backlog Z2).
-func TestPrintBannerLocalized(t *testing.T) {
-	out := captureStdout(t, func() { printBanner(":8787") })
-	t.Logf("배너 샘플:\n%s", out)
-
-	hasHangul := strings.ContainsFunc(out, func(r rune) bool {
-		return unicode.Is(unicode.Hangul, r)
-	})
-	if !hasHangul {
-		t.Fatalf("배너에 한글이 없다: %q", out)
+// TestPrintBannerFollowsLanguage verifies the startup banner is rendered in the
+// language the operator configured, rather than always in Korean.
+//
+// The banner used to be hardcoded Korean, and this test used to assert exactly
+// that. Requiring Korean made the language setting a lie: an operator running
+// with ARTEX_LANG=en still saw Korean as the first line of output. What matters
+// is that the banner tracks config.Language(), so the test pins both ends:
+// Korean under ko, and no Korean at all under the other four.
+func TestPrintBannerFollowsLanguage(t *testing.T) {
+	t.Setenv("ARTEX_LANG", "ko")
+	ko := captureStdout(t, func() { printBanner(":8787") })
+	if !strings.ContainsFunc(ko, func(r rune) bool { return unicode.Is(unicode.Hangul, r) }) {
+		t.Fatalf("banner is not Korean under ARTEX_LANG=ko: %q", ko)
 	}
-
 	for _, want := range []string{"자율 침투 테스트 시스템", "버전", "수신 대기", ":8787"} {
-		if !strings.Contains(out, want) {
-			t.Errorf("배너에 %q 가 없다: %q", want, out)
+		if !strings.Contains(ko, want) {
+			t.Errorf("Korean banner missing %q: %q", want, ko)
+		}
+	}
+	// Even in Korean, no CJK Han residue: the brief requires pure Hangul here.
+	for _, r := range ko {
+		if unicode.Is(unicode.Han, r) {
+			t.Errorf("Korean banner has CJK Han residue (%q): %q", r, ko)
 		}
 	}
 
-	for _, r := range out {
-		if unicode.Is(unicode.Han, r) {
-			t.Errorf("배너에 CJK 한자 잔재(%q): %q", r, out)
+	for _, code := range []string{"en", "zh", "es", "ja"} {
+		t.Setenv("ARTEX_LANG", code)
+		out := captureStdout(t, func() { printBanner(":8787") })
+		if strings.ContainsFunc(out, func(r rune) bool { return unicode.Is(unicode.Hangul, r) }) {
+			t.Errorf("[%s] banner still contains Korean: %q", code, out)
+		}
+		if !strings.Contains(out, ":8787") {
+			t.Errorf("[%s] banner dropped the listen address: %q", code, out)
 		}
 	}
 }

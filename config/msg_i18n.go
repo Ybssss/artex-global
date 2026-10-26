@@ -45,6 +45,15 @@ var logCatalog = map[string]map[string]string{
 	},
 	"일시정지됨": {"en": "paused", "zh": "已暂停", "es": "pausada", "ja": "一時停止しました"},
 	"재개됨":   {"en": "resumed", "zh": "已恢复", "es": "reanudada", "ja": "再開しました"},
+	"  AI 자율 침투 테스트 시스템": {
+		"en": "  AI Autonomous Penetration Testing System", "zh": "  AI 自主渗透测试系统", "es": "  Sistema autónomo de pruebas de penetración con IA", "ja": "  AI 自律ペネトレーションテストシステム",
+	},
+	"  버전 %s  ·  %s/%s  ·  %s  ·  수신 대기 %s\n\n": {
+		"en": "  version %s  ·  %s/%s  ·  %s  ·  listening on %s\n\n",
+		"zh": "  版本 %s  ·  %s/%s  ·  %s  ·  监听 %s\n\n",
+		"es": "  versión %s  ·  %s/%s  ·  %s  ·  escuchando en %s\n\n",
+		"ja": "  バージョン %s  ·  %s/%s  ·  %s  ·  待ち受け %s\n\n",
+	},
 	"[auth] JWT 키를 %s 에서 %s 로 이전(탐색 가능한 워크스페이스 밖으로 이동)": {
 		"en": "[auth] moved JWT key from %s to %s (out of the discoverable workspace)",
 		"zh": "[auth] 已将 JWT 密钥从 %s 迁移到 %s（移出可被发现的工作区）",
