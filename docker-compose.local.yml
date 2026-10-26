@@ -1,0 +1,19 @@
+# 本地构建覆盖层：让 `docker compose` 使用本仓库自建的镜像，而不是从 ghcr 拉取。
+#
+# 为什么需要它：上游 compose 固定 `image: ghcr.io/jiwoochris/artex-global:latest`，
+# 于是 `docker compose up -d` 重建容器时会用镜像里的旧二进制覆盖 /app/artex，
+# 手工 docker cp 进去的修复随之丢失。
+#
+# 用法：
+#   docker build -f Dockerfile.build -t artex-global:local .
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+#
+# 或者把它设成默认（在 .env 里）：
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.local.yml
+#
+# 然后平常的 `docker compose up -d` 就会自动带上这一层。
+services:
+  artex:
+    image: artex-global:local
+    # 镜像里已经带了编译好的二进制，不需要再拉取。
+    pull_policy: never

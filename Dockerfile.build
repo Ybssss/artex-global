@@ -1,0 +1,65 @@
+# syntax=docker/dockerfile:1
+#
+# 本仓库自建镜像：从源码编译，不依赖预置的 dist/ 产物。
+#
+# 上游 Dockerfile 是「运行期镜像」——它只 COPY 预编译好的 dist/${TARGETARCH}/artex，
+# 二进制由 CI 单独构建。本文件保留那套运行期层（工具链、Playwright、start.sh 全部照搬），
+# 只在前面加一个 builder 阶段把二进制编出来，于是 `docker build .` 一步到位，
+# 且 dist/ 被 gitignore 也不影响构建。
+#
+# 用法：
+#   docker build -t artex-global:local .
+#   docker build -t artex-global:local --build-arg TARGETARCH=arm64 .
+#
+# 为什么要有这个文件：容器 `docker compose up -d` 重建时会用镜像里的旧二进制覆盖
+# /app/artex，手工 docker cp 进去的修复会丢。用自建镜像后修复随镜像固化。
+
+# ---------- stage 1: 前端静态导出 ----------
+FROM node:22-bookworm-slim AS web
+WORKDIR /src/web
+# 先只拷依赖清单，让 npm ci 层在源码变动时仍能命中缓存。
+COPY web/package.json web/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY web/ ./
+# NEXT_EXPORT=1 走 output:"export"，产出纯静态目录到 /src/web/out。
+ENV NEXT_EXPORT=1
+RUN npm run build:static
+
+# ---------- stage 2: Go 二进制 ----------
+FROM golang:1.26-alpine AS build
+WORKDIR /src
+# 依赖层先下来，源码改动不会让它失效。
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+# 前端产物放进 embed 目录：webui_embed.go 的 //go:embed all:webui/dist 从这里读。
+RUN rm -rf server/webui/dist && mkdir -p server/webui/dist
+COPY --from=web /src/web/out/ ./server/webui/dist/
+# 静态单二进制：CGO 关闭，UI 内嵌。
+RUN CGO_ENABLED=0 GOARCH=amd64 go build -tags embedui -trimpath \
+      -ldflags "-s -w" -o /out/artex ./cmd/artex
+
+# ---------- stage 3: 运行期镜像（与上游一致） ----------
+FROM python:3.12-slim-bookworm
+# 상용 도구: ripgrep / curl / vim 에 더해 recon 에 자주 쓰는 도구 묶음.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ca-certificates ripgrep curl wget vim git jq unzip \
+      dnsutils iputils-ping netcat-openbsd inetutils-telnet whois nmap \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+# Playwright MCP/CLI 预装，避免运行时 npx 联网下载。
+RUN npm install -g @playwright/mcp@latest @playwright/cli@latest playwright@latest \
+    && playwright-cli --help \
+    && playwright install --with-deps chromium \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY --from=build /out/artex /app/artex
+COPY start.sh /app/start.sh
+RUN chmod +x /app/artex /app/start.sh
+COPY skills/ /app/skills/
+# data/(SQLite + jwt.key) 持久化点
+VOLUME ["/app/data"]
+EXPOSE 8787 8788
+ENTRYPOINT ["/app/start.sh"]
+CMD ["-addr", ":8787", "-proxy", ":8788"]
