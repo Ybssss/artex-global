@@ -3758,11 +3758,43 @@ func (s *Server) mainSessions(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 500, err.Error())
 		return
 	}
+	// Segment 0 is implicit — it has no main_sessions row, so the DB hands back a
+	// zero time. The frontend renders that as "0001-01-01", which reads as a broken
+	// record rather than "the original conversation". Fill it from the transcript
+	// file's mtime: that is when the segment was last written, which is what the
+	// session list is trying to show anyway.
+	for i := range list {
+		if !list[i].CreatedAt.IsZero() {
+			continue
+		}
+		if mt, ok := s.mainSegModTime(t, list[i].Seq); ok {
+			list[i].CreatedAt = mt
+		}
+	}
 	current := 0
 	if len(list) > 0 {
 		current = list[0].Seq // newest-first
 	}
 	writeJSON(w, 200, map[string]any{"sessions": list, "current": current})
+}
+
+// mainSegModTime returns the modification time of a main-session segment's
+// transcript, so the session list can show a real timestamp for segment 0 (which
+// has no database row).
+//
+// Segment 0 keeps the legacy "exp<id>-main" name; later segments are
+// "exp<id>-main-s<seq>". The naming has to match agent/mainagent.go, which is the
+// only place these files are created — keep them in sync.
+func (s *Server) mainSegModTime(t *Task, seg int) (time.Time, bool) {
+	name := fmt.Sprintf("exp%d-main", t.ExpID)
+	if seg > 0 {
+		name = fmt.Sprintf("exp%d-main-s%d", t.ExpID, seg)
+	}
+	fi, err := os.Stat(filepath.Join(s.m.dir, "transcripts", name+".jsonl"))
+	if err != nil {
+		return time.Time{}, false
+	}
+	return fi.ModTime(), true
 }
 
 // newMainSession starts a fresh main-agent conversation segment. Only the segment
